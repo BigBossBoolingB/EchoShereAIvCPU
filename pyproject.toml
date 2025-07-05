@@ -1,0 +1,188 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "echosphere"
+version = "0.1.0"
+description = "EchoSphere AI-vCPU: A self-aware, self-optimizing virtual processor"
+readme = "README.md"
+license = {file = "LICENCE.md"}
+authors = [
+    {name = "EchoSphere Development Team", email = "dev@echosphere.ai"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Distributed Computing",
+]
+requires-python = ">=3.9"
+dependencies = [
+    # Core actor system for GWT implementation
+    "pykka>=4.0.0",
+    
+    # Vector Symbolic Architecture implementation (using PyTorch)
+    "torch>=2.0.0",
+    
+    # Hybrid vector-graph database
+    "neo4j>=5.0.0",
+    
+    # Time-series monitoring and observability
+    "influxdb-client>=1.36.0",
+    
+    # Reinforcement learning framework
+    "stable-baselines3>=2.0.0",
+    "gymnasium>=0.28.0",
+    
+    # Core Python async and concurrency
+    "asyncio-mqtt>=0.13.0",
+    
+    # Scientific computing and data handling
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=2.0.0",
+    
+    # Configuration and utilities
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    
+    # Logging and monitoring
+    "structlog>=23.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing framework
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    
+    # Code quality and formatting
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.12.0",
+    
+    # Documentation
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    
+    # Development utilities
+    "pre-commit>=3.0.0",
+    "jupyter>=1.0.0",
+]
+
+formal-verification = [
+    # Formal verification and temporal logic
+    "py-metric-temporal-logic>=0.1.0",
+    "stormpy>=1.8.0",
+]
+
+neuromorphic = [
+    # Future neuromorphic hardware support
+    "lava-nc>=0.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/BigBossBoolingB/EchoShereAIvCPU"
+Repository = "https://github.com/BigBossBoolingB/EchoShereAIvCPU"
+Documentation = "https://github.com/BigBossBoolingB/EchoShereAIvCPU#readme"
+Issues = "https://github.com/BigBossBoolingB/EchoShereAIvCPU/issues"
+
+[project.scripts]
+echosphere = "echosphere.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["echosphere*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["echosphere"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pykka.*",
+    "torchhd.*",
+    "neo4j.*",
+    "influxdb_client.*",
+    "stable_baselines3.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["echosphere"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
