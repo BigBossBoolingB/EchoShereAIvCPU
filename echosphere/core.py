@@ -164,7 +164,9 @@ class EchoSphere:
                         actor_ref.stop()
                         self.logger.debug(f"Stopped {actor_name}")
                     except Exception as e:
-                        self.logger.warning(f"Error stopping {actor_name}: {e}")
+                        self.logger.warning(
+                            f"Error stopping {actor_name}: {e}"
+                        )
 
             if self.actor_system_started:
                 self.actor_system_started = False
@@ -201,7 +203,11 @@ class EchoSphere:
 
         try:
             result = self.input_ksa_ref.ask(
-                {"action": "submit_task", "task_type": task_type, "content": content}
+                {
+                    "action": "submit_task",
+                    "task_type": task_type,
+                    "content": content,
+                }
             )
 
             self.total_tasks_processed += 1

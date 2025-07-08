@@ -5,7 +5,7 @@ This module implements the WorkspaceActor as a Facade pattern for the global wor
 providing centralized state management and observer pattern for broadcasts.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 import time
 import threading
 from dataclasses import dataclass, field
@@ -89,7 +89,9 @@ class WorkspaceActor(pykka.ThreadingActor):
         elif action == "unsubscribe":
             return self._unsubscribe(message["actor_name"])
         elif action == "get_messages":
-            return self._get_messages(message.get("msg_type"), message.get("limit", 10))
+            return self._get_messages(
+                message.get("msg_type"), message.get("limit", 10)
+            )
         elif action == "get_attention_focus":
             return self._get_attention_focus()
         elif action == "set_attention_focus":
@@ -115,7 +117,9 @@ class WorkspaceActor(pykka.ThreadingActor):
                 self.messages = self.messages[-self.max_messages :]
 
             if len(self.message_history) > self.max_history:
-                self.message_history = self.message_history[-self.max_history :]
+                self.message_history = self.message_history[
+                    -self.max_history :
+                ]
 
             if msg.priority >= self.attention_threshold:
                 self.attention_focus = msg
@@ -129,20 +133,27 @@ class WorkspaceActor(pykka.ThreadingActor):
                 "timestamp": msg.timestamp,
             }
 
-    def _subscribe(self, actor_name: str, actor_ref: ActorRef) -> Dict[str, Any]:
+    def _subscribe(
+        self, actor_name: str, actor_ref: ActorRef
+    ) -> Dict[str, Any]:
         """Subscribe an actor to workspace broadcasts."""
         with self.lock:
             self.subscribers[actor_name] = actor_ref
             self.workspace_state["subscribers_count"] = len(self.subscribers)
 
-            return {"status": "success", "subscriber_count": len(self.subscribers)}
+            return {
+                "status": "success",
+                "subscriber_count": len(self.subscribers),
+            }
 
     def _unsubscribe(self, actor_name: str) -> Dict[str, Any]:
         """Unsubscribe an actor from workspace broadcasts."""
         with self.lock:
             if actor_name in self.subscribers:
                 del self.subscribers[actor_name]
-                self.workspace_state["subscribers_count"] = len(self.subscribers)
+                self.workspace_state["subscribers_count"] = len(
+                    self.subscribers
+                )
                 return {"status": "success"}
             else:
                 return {"status": "error", "message": "Actor not subscribed"}
@@ -155,9 +166,13 @@ class WorkspaceActor(pykka.ThreadingActor):
             messages = self.messages
 
             if msg_type:
-                messages = [msg for msg in messages if msg.msg_type == msg_type]
+                messages = [
+                    msg for msg in messages if msg.msg_type == msg_type
+                ]
 
-            messages.sort(key=lambda x: (x.priority, x.timestamp), reverse=True)
+            messages.sort(
+                key=lambda x: (x.priority, x.timestamp), reverse=True
+            )
 
             return messages[:limit]
 
@@ -187,7 +202,9 @@ class WorkspaceActor(pykka.ThreadingActor):
         with self.lock:
             return self.workspace_state.copy()
 
-    def _clear_messages(self, msg_type: Optional[MessageType] = None) -> Dict[str, Any]:
+    def _clear_messages(
+        self, msg_type: Optional[MessageType] = None
+    ) -> Dict[str, Any]:
         """Clear messages from the workspace."""
         with self.lock:
             if msg_type:
@@ -253,12 +270,20 @@ class WorkspaceProxy:
             metadata=metadata or {},
         )
 
-        return self.workspace_ref.ask({"action": "post_message", "message": message})
+        return self.workspace_ref.ask(
+            {"action": "post_message", "message": message}
+        )
 
-    def subscribe(self, actor_name: str, actor_ref: ActorRef) -> Dict[str, Any]:
+    def subscribe(
+        self, actor_name: str, actor_ref: ActorRef
+    ) -> Dict[str, Any]:
         """Subscribe an actor to workspace broadcasts."""
         return self.workspace_ref.ask(
-            {"action": "subscribe", "actor_name": actor_name, "actor_ref": actor_ref}
+            {
+                "action": "subscribe",
+                "actor_name": actor_name,
+                "actor_ref": actor_ref,
+            }
         )
 
     def get_messages(
@@ -275,13 +300,17 @@ class WorkspaceProxy:
 
     def set_attention_focus(self, msg: WorkspaceMessage) -> Dict[str, Any]:
         """Set the attention focus."""
-        return self.workspace_ref.ask({"action": "set_attention_focus", "message": msg})
+        return self.workspace_ref.ask(
+            {"action": "set_attention_focus", "message": msg}
+        )
 
     def get_workspace_state(self) -> Dict[str, Any]:
         """Get the current workspace state."""
         return self.workspace_ref.ask({"action": "get_workspace_state"})
 
-    def clear_messages(self, msg_type: Optional[MessageType] = None) -> Dict[str, Any]:
+    def clear_messages(
+        self, msg_type: Optional[MessageType] = None
+    ) -> Dict[str, Any]:
         """Clear messages from the workspace."""
         return self.workspace_ref.ask(
             {"action": "clear_messages", "msg_type": msg_type}
