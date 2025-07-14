@@ -5,9 +5,8 @@ This module implements the MemoryKSA that integrates VSA operations with
 Neo4j graph storage to provide hybrid memory capabilities for the cognitive system.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 import time
-import logging
 from pykka import ActorRef
 
 from ..cognitive.actors import KnowledgeSourceActor
@@ -57,6 +56,8 @@ class MemoryKSA(KnowledgeSourceActor):
         self.total_queries = 0
         self.successful_queries = 0
         self.average_query_time = 0.0
+        self.query_type_stats = {}
+        self.performance_history = []
 
     def initialize(self) -> None:
         """Initialize the MemoryKSA."""
@@ -159,6 +160,7 @@ class MemoryKSA(KnowledgeSourceActor):
             end_time = time.time()
             query_time = end_time - start_time
             self._update_performance_metrics(query_time)
+            self._track_query_type_performance(query_type, query_time)
 
             result_content = {
                 "query_id": query_id,
@@ -330,14 +332,43 @@ class MemoryKSA(KnowledgeSourceActor):
             return {"status": "error", "concept": concept, "error": str(e)}
 
     def _update_performance_metrics(self, query_time: float) -> None:
-        """Update performance metrics."""
-        alpha = 0.1  # Smoothing factor
+        """Update performance metrics with improved responsiveness."""
+        alpha = min(0.3, 1.0 / max(1, self.total_queries))
         if self.average_query_time == 0.0:
             self.average_query_time = query_time
         else:
             self.average_query_time = (
                 alpha * query_time + (1 - alpha) * self.average_query_time
             )
+
+    def _track_query_type_performance(
+        self, query_type: str, query_time: float
+    ) -> None:
+        """Track performance metrics by query type."""
+        if query_type not in self.query_type_stats:
+            self.query_type_stats[query_type] = {
+                "count": 0,
+                "total_time": 0.0,
+                "average_time": 0.0,
+                "min_time": float('inf'),
+                "max_time": 0.0
+            }
+
+        stats = self.query_type_stats[query_type]
+        stats["count"] += 1
+        stats["total_time"] += query_time
+        stats["average_time"] = stats["total_time"] / stats["count"]
+        stats["min_time"] = min(stats["min_time"], query_time)
+        stats["max_time"] = max(stats["max_time"], query_time)
+
+        self.performance_history.append({
+            "timestamp": time.time(),
+            "query_type": query_type,
+            "query_time": query_time
+        })
+
+        if len(self.performance_history) > 1000:
+            self.performance_history = self.performance_history[-500:]
 
     def _get_memory_stats(self) -> Dict[str, Any]:
         """Get memory system statistics."""
@@ -350,9 +381,12 @@ class MemoryKSA(KnowledgeSourceActor):
             "query_stats": {
                 "total_queries": self.total_queries,
                 "successful_queries": self.successful_queries,
-                "success_rate": (self.successful_queries / max(1, self.total_queries))
-                * 100,
+                "success_rate": (
+                    self.successful_queries / max(1, self.total_queries)
+                ) * 100,
                 "average_query_time": self.average_query_time,
                 "active_queries": len(self.active_queries),
+                "query_type_performance": self.query_type_stats,
+                "recent_performance_samples": len(self.performance_history),
             },
         }

@@ -60,6 +60,37 @@ pytest -m unit
 pytest -m integration
 ```
 
+### Performance Testing
+
+The project includes comprehensive performance testing and benchmarking capabilities:
+
+```bash
+# Run performance benchmarks with timing analysis
+python scripts/build.py --perf
+
+# Run tests with detailed duration reporting
+pytest tests/ --durations=10
+
+# Run tests with coverage and performance metrics
+pytest --cov=echosphere --durations=10
+```
+
+#### Performance Optimization Guidelines
+
+When contributing performance improvements:
+
+1. **Measure First**: Establish baseline performance metrics before optimization
+2. **Profile Systematically**: Use the `--durations` flag to identify bottlenecks
+3. **Cache Strategically**: Implement LRU caching for frequently accessed computations
+4. **Monitor Memory**: Track memory usage patterns in VSA operations
+5. **Test Thoroughly**: Ensure optimizations don't break existing functionality
+
+#### Current Optimizations
+
+- **LRU Caching**: VSA similarity computations cached with `@lru_cache(maxsize=1024)`
+- **Adaptive Metrics**: Performance tracking with responsive exponential smoothing
+- **Query Analytics**: Per-query-type performance monitoring and trend analysis
+
 ### Architecture Overview
 
 EchoSphere follows a hybrid Actor-Blackboard model:

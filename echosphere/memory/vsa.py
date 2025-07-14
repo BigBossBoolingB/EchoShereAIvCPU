@@ -10,9 +10,8 @@ This module provides the core VSA operations for hypervector manipulation:
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.nn.functional as F
-import numpy as np
 from dataclasses import dataclass
-import time
+from functools import lru_cache
 
 
 @dataclass
@@ -207,6 +206,20 @@ class VSAMemory:
         else:
             return bound_vector * key_tensor
 
+    @lru_cache(maxsize=1024)
+    def _cached_similarity(
+        self, tensor_a_hash: int, tensor_b_hash: int,
+        tensor_a: torch.Tensor, tensor_b: torch.Tensor
+    ) -> float:
+        """Cached similarity computation for frequently accessed vectors."""
+        tensor_a = tensor_a.float()
+        tensor_b = tensor_b.float()
+
+        similarity_score = torch.cosine_similarity(
+            tensor_a.flatten(), tensor_b.flatten(), dim=0
+        )
+        return float(similarity_score.item())
+
     def similarity(
         self,
         vector_a: Union[HyperVector, torch.Tensor],
@@ -225,15 +238,18 @@ class VSAMemory:
         tensor_a = vector_a.vector if isinstance(vector_a, HyperVector) else vector_a
         tensor_b = vector_b.vector if isinstance(vector_b, HyperVector) else vector_b
 
-        # Ensure tensors are floating point for cosine similarity
-        tensor_a = tensor_a.float()
-        tensor_b = tensor_b.float()
+        try:
+            hash_a = hash(tensor_a.data_ptr())
+            hash_b = hash(tensor_b.data_ptr())
+            return self._cached_similarity(hash_a, hash_b, tensor_a, tensor_b)
+        except Exception:
+            tensor_a = tensor_a.float()
+            tensor_b = tensor_b.float()
 
-        similarity_score = torch.cosine_similarity(
-            tensor_a.flatten(), tensor_b.flatten(), dim=0
-        )
-
-        return float(similarity_score.item())
+            similarity_score = torch.cosine_similarity(
+                tensor_a.flatten(), tensor_b.flatten(), dim=0
+            )
+            return float(similarity_score.item())
 
     def find_similar(
         self,
@@ -242,7 +258,7 @@ class VSAMemory:
         top_k: int = 5,
     ) -> List[Tuple[str, float]]:
         """
-        Find concepts similar to the query vector.
+        Find concepts similar to the query vector with optimized search.
 
         Args:
             query_vector: Vector to search for similarities
@@ -264,12 +280,19 @@ class VSAMemory:
             if sim_score >= threshold:
                 similarities.append((concept, sim_score))
 
+                if len(similarities) >= top_k * 2:
+                    similarities.sort(key=lambda x: x[1], reverse=True)
+                    similarities = similarities[:top_k]
+                    threshold = max(threshold, similarities[-1][1])
+
         similarities.sort(key=lambda x: x[1], reverse=True)
         return similarities[:top_k]
 
     def cleanup(
-        self, noisy_vector: torch.Tensor, candidates: Optional[List[str]] = None
-    ) -> Tuple[str, float]:
+        self,
+        noisy_vector: torch.Tensor,
+        candidates: Optional[List[str]] = None
+    ) -> Tuple[Optional[str], float]:
         """
         Clean up a noisy vector by finding the closest stored concept.
 
@@ -334,14 +357,13 @@ class VSAMemory:
         Returns:
             List of (candidate, similarity) tuples
         """
-        known_vec = self.encode_concept(known_value)
 
         relation_base = self.codebook["RELATION"]
         triple = self.unbind(relation_vector, relation_base)
 
         return self.find_similar(triple, threshold=0.5)
 
-    def get_memory_stats(self) -> Dict[str, Union[int, float]]:
+    def get_memory_stats(self) -> Dict[str, Union[int, float, str]]:
         """Get statistics about the current memory state."""
         return {
             "total_concepts": len(self.concept_vectors),
