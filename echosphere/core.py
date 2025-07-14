@@ -5,14 +5,12 @@ This module implements the main EchoSphere system that integrates all components
 following the hybrid Actor-Blackboard model with proper startup/shutdown procedures.
 """
 
-import asyncio
 import logging
 import time
 from typing import Any, Dict, List, Optional
-import pykka
 from pykka import ActorRef
 
-from .cognitive.workspace import WorkspaceActor, WorkspaceProxy, MessageType
+from .cognitive.workspace import WorkspaceActor, WorkspaceProxy
 from .cognitive.actors import InputKSA, LogicKSA, OutputKSA
 from .memory.memory_ksa import MemoryKSA
 from .utils.config import Config
