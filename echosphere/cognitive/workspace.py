@@ -5,7 +5,7 @@ This module implements the WorkspaceActor as a Facade pattern for the global wor
 providing centralized state management and observer pattern for broadcasts.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 import time
 import threading
 from dataclasses import dataclass, field
