@@ -84,13 +84,13 @@ dev = [
 
 formal-verification = [
     # Formal verification and temporal logic
-    "py-metric-temporal-logic>=0.1.0",
+    "metric-temporal-logic>=0.4.1",
     "stormpy>=1.8.0",
 ]
 
 neuromorphic = [
     # Future neuromorphic hardware support
-    "lava-nc>=0.8.0",
+    "lava>=0.4.1",
 ]
 
 [project.urls]
